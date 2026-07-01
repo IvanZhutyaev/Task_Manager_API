@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Проект — Task Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+    <div class="container">
+        <a class="navbar-brand" href="/projects">Task Manager</a>
+        <button class="btn btn-light btn-sm" onclick="logout()">Выйти</button>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="mb-3">
+        <a href="/projects" class="text-decoration-none">&larr; К проектам</a>
+    </div>
+    <div id="alert"></div>
+    <div id="projectHeader" class="mb-4"></div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h4 mb-0">Доски</h2>
+        <button class="btn btn-primary btn-sm" id="createBoardBtn" data-bs-toggle="modal" data-bs-target="#createBoardModal">Новая доска</button>
+    </div>
+    <div id="boardsList" class="row g-3"></div>
+
+    <hr class="my-4">
+    <h2 class="h5">Участники</h2>
+    <div id="membersList" class="mb-3"></div>
+    <form id="addMemberForm" class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label" for="memberUserId">ID пользователя</label>
+            <input type="number" class="form-control" id="memberUserId" required>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label" for="memberRole">Роль</label>
+            <select class="form-select" id="memberRole">
+                <option value="EDITOR">EDITOR</option>
+                <option value="VIEWER">VIEWER</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-outline-primary" id="addMemberBtn">Добавить</button>
+        </div>
+    </form>
+</div>
+
+<div class="modal fade" id="createBoardModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="createBoardForm">
+                <div class="modal-header">
+                    <h5 class="modal-title">Создать доску</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label" for="boardName">Название</label>
+                    <input type="text" class="form-control" id="boardName" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Создать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/api.js"></script>
+<script>
+    const projectId = window.location.pathname.split('/').pop();
+    let currentRole = null;
+
+    if (requireAuth()) {
+        loadProject();
+    }
+
+    async function loadProject() {
+        try {
+            const project = await apiFetch(`/api/projects/${projectId}`);
+            currentRole = project.currentUserRole;
+            document.getElementById('projectHeader').innerHTML = `
+                <h1 class="h3">${escapeHtml(project.name)}</h1>
+                <p class="text-muted">${escapeHtml(project.description || '')}</p>
+                <span class="badge text-bg-primary">${project.currentUserRole}</span>
+            `;
+
+            const canWrite = currentRole === 'OWNER' || currentRole === 'EDITOR';
+            document.getElementById('createBoardBtn').classList.toggle('d-none', !canWrite);
+            document.getElementById('addMemberForm').classList.toggle('d-none', currentRole !== 'OWNER');
+
+            await Promise.all([loadBoards(), loadMembers()]);
+        } catch (err) {
+            showAlert('alert', err.message);
+        }
+    }
+
+    async function loadBoards() {
+        const boards = await apiFetch(`/api/projects/${projectId}/boards`);
+        const container = document.getElementById('boardsList');
+        if (boards.length === 0) {
+            container.innerHTML = '<div class="col-12"><div class="alert alert-info">Досок пока нет.</div></div>';
+            return;
+        }
+        container.innerHTML = boards.map(b => `
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">${escapeHtml(b.name)}</h5>
+                        <a href="/boards/${b.id}" class="btn btn-sm btn-outline-primary">Открыть доску</a>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function loadMembers() {
+        const members = await apiFetch(`/api/projects/${projectId}/members`);
+        document.getElementById('membersList').innerHTML = `
+            <ul class="list-group">
+                ${members.map(m => `
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>${escapeHtml(m.name)} (${escapeHtml(m.email)})</span>
+                        <span class="badge text-bg-secondary">${m.role}</span>
+                    </li>
+                `).join('')}
+            </ul>
+        `;
+    }
+
+    document.getElementById('createBoardForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            await apiFetch(`/api/projects/${projectId}/boards`, {
+                method: 'POST',
+                body: JSON.stringify({ name: document.getElementById('boardName').value })
+            });
+            bootstrap.Modal.getInstance(document.getElementById('createBoardModal')).hide();
+            document.getElementById('createBoardForm').reset();
+            loadBoards();
+        } catch (err) {
+            showAlert('alert', err.message);
+        }
+    });
+
+    document.getElementById('addMemberForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            await apiFetch(`/api/projects/${projectId}/members`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    userId: Number(document.getElementById('memberUserId').value),
+                    role: document.getElementById('memberRole').value
+                })
+            });
+            document.getElementById('addMemberForm').reset();
+            loadMembers();
+        } catch (err) {
+            showAlert('alert', err.message);
+        }
+    });
+</script>
+</body>
+</html>
