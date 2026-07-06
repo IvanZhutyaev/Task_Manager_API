@@ -1,4 +1,18 @@
 const TOKEN_KEY = 'taskManagerToken';
+const API_BASE = '/api/v1';
+
+function resolveApiUrl(path) {
+    if (path.startsWith('/api/v1')) {
+        return path;
+    }
+    if (path.startsWith('/api/')) {
+        return API_BASE + path.substring(4);
+    }
+    if (path.startsWith('/')) {
+        return API_BASE + path;
+    }
+    return API_BASE + '/' + path;
+}
 
 function getToken() {
     return sessionStorage.getItem(TOKEN_KEY);
@@ -20,9 +34,12 @@ function requireAuth() {
     return true;
 }
 
-async function apiFetch(url, options = {}) {
+async function apiFetch(path, options = {}) {
+    const url = resolveApiUrl(path);
+
     const headers = {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         ...(options.headers || {})
     };
 

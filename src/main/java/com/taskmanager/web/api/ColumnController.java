@@ -1,11 +1,13 @@
 package com.taskmanager.web.api;
 
+import com.taskmanager.config.ApiConstants;
 import com.taskmanager.service.ColumnService;
 import com.taskmanager.web.api.dto.ColumnRequest;
 import com.taskmanager.web.api.dto.ColumnResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,7 +19,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/boards/{boardId}/columns")
+@RequestMapping(value = ApiConstants.API_V1 + "/boards/{boardId}/columns", produces = MediaType.APPLICATION_JSON_VALUE)
 public class ColumnController {
 
     private final ColumnService columnService;

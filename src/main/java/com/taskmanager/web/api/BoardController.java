@@ -1,11 +1,13 @@
 package com.taskmanager.web.api;
 
+import com.taskmanager.config.ApiConstants;
 import com.taskmanager.service.BoardService;
 import com.taskmanager.web.api.dto.BoardRequest;
 import com.taskmanager.web.api.dto.BoardResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,7 +19,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/projects/{projectId}/boards")
+@RequestMapping(value = ApiConstants.API_V1 + "/projects/{projectId}/boards", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BoardController {
 
     private final BoardService boardService;

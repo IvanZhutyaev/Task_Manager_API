@@ -37,7 +37,7 @@ class ProjectControllerTest {
                 {"email":"%s","password":"secret123","name":"Project User"}
                 """.formatted(email);
 
-        MvcResult result = mockMvc.perform(post("/api/auth/register")
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isCreated())
@@ -50,7 +50,7 @@ class ProjectControllerTest {
     void createAndListProjects() throws Exception {
         ProjectRequest request = new ProjectRequest("Course Project", "Demo project");
 
-        mockMvc.perform(post("/api/projects")
+        mockMvc.perform(post("/api/v1/projects")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -58,15 +58,18 @@ class ProjectControllerTest {
                 .andExpect(jsonPath("$.name").value("Course Project"))
                 .andExpect(jsonPath("$.currentUserRole").value("OWNER"));
 
-        mockMvc.perform(get("/api/projects")
+        mockMvc.perform(get("/api/v1/projects")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Course Project"));
     }
 
     @Test
-    void unauthorizedWithoutToken() throws Exception {
-        mockMvc.perform(get("/api/projects"))
-                .andExpect(status().isUnauthorized());
+    void unauthorizedWithoutTokenReturnsJson() throws Exception {
+        mockMvc.perform(get("/api/v1/projects")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.message").value("Unauthorized"));
     }
 }

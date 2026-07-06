@@ -50,7 +50,7 @@ class TaskControllerTest {
     void createMoveAndFilterTasks() throws Exception {
         TaskRequest taskRequest = new TaskRequest("Write docs", "README section", TaskPriority.HIGH, null, null);
 
-        MvcResult createResult = mockMvc.perform(post("/api/columns/" + columnOneId + "/tasks")
+        MvcResult createResult = mockMvc.perform(post("/api/v1/columns/" + columnOneId + "/tasks")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(taskRequest)))
@@ -60,7 +60,7 @@ class TaskControllerTest {
 
         Long taskId = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asLong();
 
-        mockMvc.perform(patch("/api/tasks/" + taskId + "/move")
+        mockMvc.perform(patch("/api/v1/tasks/" + taskId + "/move")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new MoveTaskRequest(columnTwoId))))
@@ -68,7 +68,7 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.columnId").value(columnTwoId));
 
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-                        .get("/api/columns/" + columnTwoId + "/tasks?priority=HIGH")
+                        .get("/api/v1/columns/" + columnTwoId + "/tasks?priority=HIGH")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].title").value("Write docs"));
@@ -78,7 +78,7 @@ class TaskControllerTest {
         String body = """
                 {"email":"%s","password":"secret123","name":"Task User"}
                 """.formatted(email);
-        MvcResult result = mockMvc.perform(post("/api/auth/register")
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isCreated())
@@ -87,7 +87,7 @@ class TaskControllerTest {
     }
 
     private Long createProject() throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/projects")
+        MvcResult result = mockMvc.perform(post("/api/v1/projects")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Tasks Project\",\"description\":\"Test\"}"))
@@ -97,7 +97,7 @@ class TaskControllerTest {
     }
 
     private Long createBoard(Long projectId) throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/projects/" + projectId + "/boards")
+        MvcResult result = mockMvc.perform(post("/api/v1/projects/" + projectId + "/boards")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Main Board\"}"))
@@ -107,7 +107,7 @@ class TaskControllerTest {
     }
 
     private Long createColumn(Long boardId, String name) throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/boards/" + boardId + "/columns")
+        MvcResult result = mockMvc.perform(post("/api/v1/boards/" + boardId + "/columns")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"" + name + "\"}"))
