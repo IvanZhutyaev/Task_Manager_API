@@ -23,24 +23,33 @@ public class ProjectAccessService {
                 .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN.value(), "Access denied"));
     }
 
+    public void requireCanManageProject(Project project, User user) {
+        ProjectMember member = requireMembership(project, user);
+        if (!member.canManageProject()) {
+            throw new ApiException(HttpStatus.FORBIDDEN.value(), "Only project owner can manage this project");
+        }
+    }
+
+    public void requireCanWriteContent(Project project, User user) {
+        ProjectMember member = requireMembership(project, user);
+        if (!member.canWriteContent()) {
+            throw new ApiException(HttpStatus.FORBIDDEN.value(), "Insufficient permissions");
+        }
+    }
+
+    public void requireCanRead(Project project, User user) {
+        ProjectMember member = requireMembership(project, user);
+        if (!member.canRead()) {
+            throw new ApiException(HttpStatus.FORBIDDEN.value(), "Access denied");
+        }
+    }
+
     public ProjectRole requireRole(Project project, User user, ProjectRole minimumRole) {
         ProjectMember member = requireMembership(project, user);
         if (!hasAtLeastRole(member.getRole(), minimumRole)) {
             throw new ApiException(HttpStatus.FORBIDDEN.value(), "Access denied");
         }
         return member.getRole();
-    }
-
-    public void requireCanRead(Project project, User user) {
-        requireMembership(project, user);
-    }
-
-    public void requireCanWriteContent(Project project, User user) {
-        requireRole(project, user, ProjectRole.EDITOR);
-    }
-
-    public void requireCanManageProject(Project project, User user) {
-        requireRole(project, user, ProjectRole.OWNER);
     }
 
     public boolean hasAtLeastRole(ProjectRole actual, ProjectRole required) {

@@ -19,11 +19,13 @@
     <div id="alert"></div>
     <div id="boardHeader" class="mb-3"></div>
 
-    <div class="row g-2 mb-3">
-        <div class="col-md-3">
-            <input type="text" class="form-control form-control-sm" id="filterQ" placeholder="Поиск по названию">
+    <div class="row g-2 mb-3 align-items-end">
+        <div class="col-md-2">
+            <label class="form-label small mb-1" for="filterQ">Поиск</label>
+            <input type="text" class="form-control form-control-sm" id="filterQ" placeholder="По названию">
         </div>
         <div class="col-md-2">
+            <label class="form-label small mb-1" for="filterPriority">Приоритет</label>
             <select class="form-select form-select-sm" id="filterPriority">
                 <option value="">Все приоритеты</option>
                 <option value="LOW">LOW</option>
@@ -32,12 +34,30 @@
             </select>
         </div>
         <div class="col-md-2">
-            <input type="number" class="form-control form-control-sm" id="filterAssignee" placeholder="ID исполнителя">
+            <label class="form-label small mb-1" for="filterStatus">Статус</label>
+            <select class="form-select form-select-sm" id="filterStatus">
+                <option value="">Все статусы</option>
+                <option value="BACKLOG">BACKLOG</option>
+                <option value="IN_PROGRESS">IN_PROGRESS</option>
+                <option value="DONE">DONE</option>
+                <option value="ARCHIVED">ARCHIVED</option>
+            </select>
         </div>
         <div class="col-md-2">
-            <button class="btn btn-sm btn-outline-secondary" onclick="loadBoard()">Применить фильтр</button>
+            <label class="form-label small mb-1" for="filterAssignee">Исполнитель</label>
+            <input type="number" class="form-control form-control-sm" id="filterAssignee" placeholder="ID">
         </div>
-        <div class="col-md-3 text-end">
+        <div class="col-md-2">
+            <label class="form-label small mb-1" for="pageSize">Размер страницы</label>
+            <select class="form-select form-select-sm" id="pageSize">
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20" selected>20</option>
+                <option value="50">50</option>
+            </select>
+        </div>
+        <div class="col-md-2 text-end">
+            <button class="btn btn-sm btn-outline-secondary mb-1" onclick="loadBoard()">Применить</button>
             <button class="btn btn-sm btn-outline-primary" id="createColumnBtn" data-bs-toggle="modal" data-bs-target="#createColumnModal">Новая колонка</button>
         </div>
     </div>
@@ -100,12 +120,39 @@
                         <label class="form-label" for="taskAssignee">ID исполнителя</label>
                         <input type="number" class="form-control" id="taskAssignee">
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="taskStatus">Статус</label>
+                        <select class="form-select" id="taskStatus">
+                            <option value="BACKLOG">BACKLOG</option>
+                            <option value="IN_PROGRESS">IN_PROGRESS</option>
+                            <option value="DONE">DONE</option>
+                            <option value="ARCHIVED">ARCHIVED</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted">История изменений доступна по кнопке ниже.</small>
+                    </div>
                 </div>
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-info me-auto d-none" id="historyTaskBtn">История</button>
                     <button type="button" class="btn btn-outline-danger me-auto d-none" id="deleteTaskBtn">Удалить</button>
                     <button type="submit" class="btn btn-primary">Сохранить</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="historyModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">История задачи</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="historyContent" class="vstack gap-2"></div>
+            </div>
         </div>
     </div>
 </div>
@@ -145,16 +192,21 @@
         const kanban = document.getElementById('kanban');
         const q = document.getElementById('filterQ').value;
         const priority = document.getElementById('filterPriority').value;
+        const status = document.getElementById('filterStatus').value;
         const assignee = document.getElementById('filterAssignee').value;
+        const size = document.getElementById('pageSize').value;
 
         const columnHtml = [];
         for (const column of columns) {
             const params = new URLSearchParams();
             if (q) params.set('q', q);
             if (priority) params.set('priority', priority);
+            if (status) params.set('status', status);
             if (assignee) params.set('assigneeId', assignee);
+            params.set('size', size);
             const query = params.toString() ? '?' + params.toString() : '';
-            const tasks = await apiFetch(`/api/columns/${column.id}/tasks${query}`);
+            const pageResponse = await apiFetch(`/api/columns/${column.id}/tasks${query}`);
+            const tasks = pageResponse.content || [];
 
             columnHtml.push(`
                 <div class="kanban-column p-3">
@@ -165,6 +217,7 @@
                     <div class="d-flex flex-column gap-2">
                         ${tasks.map(task => renderTaskCard(task, column.id)).join('')}
                     </div>
+                    ${pageResponse.totalElements > tasks.length ? `<div class="small text-muted mt-2">Показано ${tasks.length} из ${pageResponse.totalElements}</div>` : ''}
                 </div>
             `);
         }
@@ -183,11 +236,13 @@
                     <div class="small text-muted">${escapeHtml(task.description || '')}</div>
                     <div class="small mt-2">
                         <span class="badge text-bg-light">${task.priority}</span>
+                        <span class="badge text-bg-secondary ms-1">${task.status || 'BACKLOG'}</span>
                         ${task.assigneeName ? `<span class="ms-1">${escapeHtml(task.assigneeName)}</span>` : ''}
                     </div>
                     ${canWrite ? `
                         <div class="mt-2 d-flex gap-1">
                             <button class="btn btn-sm btn-outline-secondary" onclick="openEditTask(${task.id})">Изменить</button>
+                            <button class="btn btn-sm btn-outline-info" onclick="openHistory(${task.id})">История</button>
                             <select class="form-select form-select-sm" id="move-${task.id}" style="max-width: 120px;">${moveOptions}</select>
                             <button class="btn btn-sm btn-outline-primary" onclick="moveTask(${task.id})">→</button>
                         </div>
@@ -214,7 +269,9 @@
         document.getElementById('taskForm').reset();
         document.getElementById('taskId').value = '';
         document.getElementById('taskColumnId').value = columnId;
+        document.getElementById('taskStatus').value = 'BACKLOG';
         document.getElementById('taskModalTitle').textContent = 'Новая задача';
+        document.getElementById('historyTaskBtn').classList.add('d-none');
         document.getElementById('deleteTaskBtn').classList.add('d-none');
         new bootstrap.Modal(document.getElementById('taskModal')).show();
     }
@@ -226,9 +283,11 @@
         document.getElementById('taskTitle').value = task.title;
         document.getElementById('taskDescription').value = task.description || '';
         document.getElementById('taskPriority').value = task.priority;
+        document.getElementById('taskStatus').value = task.status || 'BACKLOG';
         document.getElementById('taskDeadline').value = task.deadline || '';
         document.getElementById('taskAssignee').value = task.assigneeId || '';
         document.getElementById('taskModalTitle').textContent = 'Редактировать задачу';
+        document.getElementById('historyTaskBtn').classList.remove('d-none');
         document.getElementById('deleteTaskBtn').classList.remove('d-none');
         new bootstrap.Modal(document.getElementById('taskModal')).show();
     }
@@ -254,6 +313,7 @@
             title: document.getElementById('taskTitle').value,
             description: document.getElementById('taskDescription').value,
             priority: document.getElementById('taskPriority').value,
+            status: document.getElementById('taskStatus').value,
             deadline: document.getElementById('taskDeadline').value || null,
             assigneeId: document.getElementById('taskAssignee').value ? Number(document.getElementById('taskAssignee').value) : null
         };
@@ -269,6 +329,33 @@
             loadBoard();
         } catch (err) {
             showAlert('alert', err.message);
+        }
+    });
+
+    async function openHistory(taskId) {
+        try {
+            const history = await apiFetch(`/api/tasks/${taskId}/history`);
+            const content = document.getElementById('historyContent');
+            content.innerHTML = history.length ? history.map(entry => `
+                <div class="border rounded p-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <strong>${escapeHtml(entry.action)}</strong>
+                        <small class="text-muted">${new Date(entry.createdAt).toLocaleString()}</small>
+                    </div>
+                    <div class="small text-muted">${escapeHtml(entry.details || '')}</div>
+                    ${entry.changedByName ? `<div class="small text-muted">Изменил: ${escapeHtml(entry.changedByName)}</div>` : ''}
+                </div>
+            `).join('') : '<div class="text-muted">История отсутствует</div>';
+            new bootstrap.Modal(document.getElementById('historyModal')).show();
+        } catch (err) {
+            showAlert('alert', err.message);
+        }
+    }
+
+    document.getElementById('historyTaskBtn').addEventListener('click', () => {
+        const taskId = document.getElementById('taskId').value;
+        if (taskId) {
+            openHistory(taskId);
         }
     });
 

@@ -2,6 +2,7 @@ package com.taskmanager.web.api.dto;
 
 import com.taskmanager.domain.Task;
 import com.taskmanager.domain.TaskPriority;
+import com.taskmanager.domain.TaskStatus;
 import java.time.LocalDate;
 
 public record TaskResponse(
@@ -10,6 +11,7 @@ public record TaskResponse(
         String title,
         String description,
         TaskPriority priority,
+        TaskStatus status,
         LocalDate deadline,
         Long assigneeId,
         String assigneeName
@@ -22,6 +24,7 @@ public record TaskResponse(
                 task.getTitle(),
                 task.getDescription(),
                 task.getPriority(),
+                task.getStatus(),
                 task.getDeadline(),
                 task.getAssignee() != null ? task.getAssignee().getId() : null,
                 task.getAssignee() != null ? task.getAssignee().getName() : null

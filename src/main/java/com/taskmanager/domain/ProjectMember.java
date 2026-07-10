@@ -67,4 +67,16 @@ public class ProjectMember {
     public void setRole(ProjectRole role) {
         this.role = role;
     }
+
+    public boolean canManageProject() {
+        return role == ProjectRole.OWNER;
+    }
+
+    public boolean canWriteContent() {
+        return role == ProjectRole.OWNER || role == ProjectRole.EDITOR;
+    }
+
+    public boolean canRead() {
+        return role == ProjectRole.OWNER || role == ProjectRole.EDITOR || role == ProjectRole.VIEWER;
+    }
 }

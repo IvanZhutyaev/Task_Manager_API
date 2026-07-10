@@ -188,6 +188,11 @@ databaseChangeLog:
                   constraints:
                     nullable: false
               - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
                   name: deadline
                   type: DATE
               - column:
@@ -196,6 +201,51 @@ databaseChangeLog:
                   constraints:
                     foreignKeyName: fk_tasks_assignee
                     references: users(id)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP
+
+        - createTable:
+            tableName: task_change_history
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: task_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_task_history_task
+                    references: tasks(id)
+              - column:
+                  name: changed_by_id
+                  type: BIGINT
+                  constraints:
+                    foreignKeyName: fk_task_history_user
+                    references: users(id)
+              - column:
+                  name: action
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: details
+                  type: VARCHAR(1000)
               - column:
                   name: created_at
                   type: TIMESTAMP

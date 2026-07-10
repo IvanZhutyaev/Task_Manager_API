@@ -4,9 +4,12 @@ import com.taskmanager.config.ApiConstants;
 import com.taskmanager.domain.TaskPriority;
 import com.taskmanager.service.TaskService;
 import com.taskmanager.web.api.dto.MoveTaskRequest;
+import com.taskmanager.web.api.dto.PageResponse;
+import com.taskmanager.web.api.dto.TaskHistoryEntryResponse;
 import com.taskmanager.web.api.dto.TaskRequest;
 import com.taskmanager.web.api.dto.TaskResponse;
 import jakarta.validation.Valid;
+import com.taskmanager.domain.TaskStatus;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -33,12 +36,17 @@ public class TaskController {
     }
 
     @GetMapping("/columns/{columnId}/tasks")
-    public List<TaskResponse> listTasks(
+    public PageResponse<TaskResponse> listTasks(
             @PathVariable Long columnId,
             @RequestParam(required = false) Long assigneeId,
             @RequestParam(required = false) TaskPriority priority,
-            @RequestParam(required = false) String q) {
-        return taskService.listTasks(columnId, assigneeId, priority, q);
+            @RequestParam(required = false) TaskStatus status,
+            @RequestParam(required = false) String q,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+        return taskService.listTasks(columnId, assigneeId, priority, status, q, page, size, sortBy, sortDir);
     }
 
     @PostMapping("/columns/{columnId}/tasks")
@@ -52,6 +60,11 @@ public class TaskController {
     @GetMapping("/tasks/{taskId}")
     public TaskResponse getTask(@PathVariable Long taskId) {
         return taskService.getTask(taskId);
+    }
+
+    @GetMapping("/tasks/{taskId}/history")
+    public List<TaskHistoryEntryResponse> getTaskHistory(@PathVariable Long taskId) {
+        return taskService.getTaskHistory(taskId);
     }
 
     @PutMapping("/tasks/{taskId}")

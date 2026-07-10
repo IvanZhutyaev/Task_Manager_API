@@ -1,5 +1,6 @@
 package com.taskmanager.web.api;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -48,7 +49,7 @@ class TaskControllerTest {
 
     @Test
     void createMoveAndFilterTasks() throws Exception {
-        TaskRequest taskRequest = new TaskRequest("Write docs", "README section", TaskPriority.HIGH, null, null);
+        TaskRequest taskRequest = new TaskRequest("Write docs", "README section", TaskPriority.HIGH, null, null, null);
 
         MvcResult createResult = mockMvc.perform(post("/api/v1/columns/" + columnOneId + "/tasks")
                         .header("Authorization", "Bearer " + token)
@@ -59,6 +60,11 @@ class TaskControllerTest {
                 .andReturn();
 
         Long taskId = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asLong();
+
+        mockMvc.perform(get("/api/v1/tasks/" + taskId + "/history")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].action").value("CREATED"));
 
         mockMvc.perform(patch("/api/v1/tasks/" + taskId + "/move")
                         .header("Authorization", "Bearer " + token)
@@ -71,7 +77,7 @@ class TaskControllerTest {
                         .get("/api/v1/columns/" + columnTwoId + "/tasks?priority=HIGH")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].title").value("Write docs"));
+                .andExpect(jsonPath("$.content[0].title").value("Write docs"));
     }
 
     private String registerAndGetToken(String email) throws Exception {

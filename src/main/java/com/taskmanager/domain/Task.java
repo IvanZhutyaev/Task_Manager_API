@@ -11,9 +11,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Map;
+import java.util.Set;
 
 @Entity
 @Table(name = "tasks")
@@ -37,6 +40,10 @@ public class Task {
     @Column(nullable = false, length = 20)
     private TaskPriority priority;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private TaskStatus status = TaskStatus.BACKLOG;
+
     private LocalDate deadline;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -46,9 +53,21 @@ public class Task {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
     @PrePersist
     void onCreate() {
         createdAt = Instant.now();
+        updatedAt = Instant.now();
+    }
+
+    @PreUpdate
+    void onUpdate() {
+        updatedAt = Instant.now();
     }
 
     public Long getId() {
@@ -113,5 +132,60 @@ public class Task {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public TaskStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(TaskStatus status) {
+        this.status = status;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public Instant getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(Instant deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    public boolean isDeleted() {
+        return deletedAt != null;
+    }
+
+    public void softDelete() {
+        deletedAt = Instant.now();
+    }
+
+    public void restore() {
+        deletedAt = null;
+    }
+
+    public boolean canBeMovedBy(User user) {
+        return assignee != null && assignee.getId() != null && assignee.getId().equals(user.getId());
+    }
+
+    public void transitionTo(TaskStatus targetStatus) {
+        Map<TaskStatus, Set<TaskStatus>> allowedTransitions = Map.of(
+                TaskStatus.BACKLOG, Set.of(TaskStatus.IN_PROGRESS, TaskStatus.ARCHIVED),
+                TaskStatus.IN_PROGRESS, Set.of(TaskStatus.DONE, TaskStatus.BACKLOG, TaskStatus.ARCHIVED),
+                TaskStatus.DONE, Set.of(TaskStatus.ARCHIVED),
+                TaskStatus.ARCHIVED, Set.of()
+        );
+
+        if (!allowedTransitions.getOrDefault(status, Set.of()).contains(targetStatus)) {
+            throw new IllegalStateException("Invalid task status transition from " + status + " to " + targetStatus);
+        }
+
+        this.status = targetStatus;
     }
 }

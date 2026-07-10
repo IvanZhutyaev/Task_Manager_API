@@ -77,4 +77,12 @@ public class Project {
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
+
+    public boolean canBeManagedBy(User user) {
+        return owner != null && owner.getId() != null && owner.getId().equals(user.getId());
+    }
+
+    public boolean canBeViewedBy(User user) {
+        return owner != null && owner.getId() != null && owner.getId().equals(user.getId());
+    }
 }
