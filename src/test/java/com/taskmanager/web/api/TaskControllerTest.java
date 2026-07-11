@@ -3,12 +3,14 @@ package com.taskmanager.web.api;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taskmanager.domain.TaskPriority;
+import com.taskmanager.domain.TaskStatus;
 import com.taskmanager.web.api.dto.MoveTaskRequest;
 import com.taskmanager.web.api.dto.TaskRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,6 +80,41 @@ class TaskControllerTest {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].title").value("Write docs"));
+    }
+
+    @Test
+    void createTaskCanStartWithDoneStatus() throws Exception {
+        TaskRequest taskRequest = new TaskRequest("Ready task", "Done task", TaskPriority.LOW, null, null, TaskStatus.DONE);
+
+        mockMvc.perform(post("/api/v1/columns/" + columnOneId + "/tasks")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(taskRequest)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("DONE"));
+    }
+
+    @Test
+    void updateTaskStatusChangesStatus() throws Exception {
+        TaskRequest createRequest = new TaskRequest("Write docs", "README section", TaskPriority.HIGH, null, null, null);
+
+        MvcResult createResult = mockMvc.perform(post("/api/v1/columns/" + columnOneId + "/tasks")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createRequest)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        Long taskId = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asLong();
+
+        TaskRequest updateRequest = new TaskRequest("Write docs", "README section", TaskPriority.HIGH, null, null, TaskStatus.IN_PROGRESS);
+
+        mockMvc.perform(put("/api/v1/tasks/" + taskId)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("IN_PROGRESS"));
     }
 
     private String registerAndGetToken(String email) throws Exception {

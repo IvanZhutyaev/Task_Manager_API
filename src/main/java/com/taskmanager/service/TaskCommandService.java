@@ -62,9 +62,7 @@ public class TaskCommandService {
         Task task = new Task();
         task.setColumn(column);
         applyTaskFields(task, request, project);
-        if (request.status() != null) {
-            task.transitionTo(request.status());
-        }
+        task.setStatus(request.status() != null ? request.status() : TaskStatus.BACKLOG);
         task = taskRepository.save(task);
         recordHistory(task, "CREATED", "Task created in column " + columnId);
 
@@ -79,6 +77,9 @@ public class TaskCommandService {
         projectAccessService.requireCanWriteContent(project, currentUserService.getCurrentUser());
 
         applyTaskFields(task, request, project);
+        if (request.status() != null) {
+            task.transitionTo(request.status());
+        }
         task = taskRepository.save(task);
         recordHistory(task, "UPDATED", "Task updated");
         return TaskResponse.from(task);
