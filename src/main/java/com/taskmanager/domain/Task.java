@@ -175,6 +175,10 @@ public class Task {
     }
 
     public void transitionTo(TaskStatus targetStatus) {
+        if (this.status == targetStatus) {
+            return;
+        }
+
         Map<TaskStatus, Set<TaskStatus>> allowedTransitions = Map.of(
                 TaskStatus.BACKLOG, Set.of(TaskStatus.IN_PROGRESS, TaskStatus.ARCHIVED),
                 TaskStatus.IN_PROGRESS, Set.of(TaskStatus.DONE, TaskStatus.BACKLOG, TaskStatus.ARCHIVED),

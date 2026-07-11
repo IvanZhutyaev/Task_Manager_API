@@ -18,6 +18,16 @@ class TaskTest {
     }
 
     @Test
+    void sameStatusTransitionIsAllowedAsNoOp() {
+        Task task = new Task();
+        task.setStatus(TaskStatus.BACKLOG);
+
+        task.transitionTo(TaskStatus.BACKLOG);
+
+        assertEquals(TaskStatus.BACKLOG, task.getStatus());
+    }
+
+    @Test
     void doneCannotMoveBackToBacklog() {
         Task task = new Task();
         task.setStatus(TaskStatus.DONE);
