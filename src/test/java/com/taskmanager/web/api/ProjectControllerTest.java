@@ -48,7 +48,7 @@ class ProjectControllerTest {
 
     @Test
     void createAndListProjects() throws Exception {
-        ProjectRequest request = new ProjectRequest("Course Project", "Demo project");
+        ProjectRequest request = new ProjectRequest("Course Project", "Demo project", null, null);
 
         mockMvc.perform(post("/api/v1/projects")
                         .header("Authorization", "Bearer " + token)

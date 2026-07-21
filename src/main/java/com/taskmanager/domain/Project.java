@@ -33,6 +33,9 @@ public class Project {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "strict_business_rules", nullable = false)
+    private boolean strictBusinessRules = false;
+
     @PrePersist
     void onCreate() {
         createdAt = Instant.now();
@@ -76,6 +79,14 @@ public class Project {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public boolean isStrictBusinessRules() {
+        return strictBusinessRules;
+    }
+
+    public void setStrictBusinessRules(boolean strictBusinessRules) {
+        this.strictBusinessRules = strictBusinessRules;
     }
 
     public boolean canBeManagedBy(User user) {

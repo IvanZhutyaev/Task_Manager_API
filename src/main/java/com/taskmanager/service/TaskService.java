@@ -2,6 +2,7 @@ package com.taskmanager.service;
 
 import com.taskmanager.domain.TaskPriority;
 import com.taskmanager.domain.TaskStatus;
+import com.taskmanager.domain.TaskType;
 import com.taskmanager.web.api.dto.MoveTaskRequest;
 import com.taskmanager.web.api.dto.PageResponse;
 import com.taskmanager.web.api.dto.TaskHistoryEntryResponse;
@@ -33,12 +34,32 @@ public class TaskService {
             Long assigneeId,
             TaskPriority priority,
             TaskStatus status,
+            TaskType taskType,
+            Long labelId,
             String q,
             int page,
             int size,
             String sortBy,
             String sortDir) {
-        return taskQueryService.listTasks(columnId, assigneeId, priority, status, q, page, size, sortBy, sortDir);
+        return taskQueryService.listTasks(
+                columnId, assigneeId, priority, status, taskType, labelId, q, page, size, sortBy, sortDir);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<TaskResponse> searchInProject(
+            Long projectId,
+            Long assigneeId,
+            TaskPriority priority,
+            TaskStatus status,
+            TaskType taskType,
+            Long labelId,
+            String q,
+            int page,
+            int size,
+            String sortBy,
+            String sortDir) {
+        return taskQueryService.searchInProject(
+                projectId, assigneeId, priority, status, taskType, labelId, q, page, size, sortBy, sortDir);
     }
 
     @Transactional(readOnly = true)

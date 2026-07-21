@@ -116,3 +116,9 @@ mvn test
 - **OWNER** — full access, manage members
 - **EDITOR** — create/edit boards, columns, tasks
 - **VIEWER** — read-only
+
+## Business rules (compatibility B)
+
+- `strictBusinessRules` on project (default `false`) enables deadline/assignee/checklist/hours/Bug→HIGH gates.
+- Column optional `wipLimit` / `mappedStatus` enable WIP and status-on-move without flipping legacy columns.
+- Additive APIs: comments, checklist, invitations, transfer-ownership, labels, dependencies, sprints, notifications, activity, `GET /projects/{id}/tasks` search.

@@ -2,6 +2,8 @@ package com.taskmanager.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -27,6 +29,13 @@ public class BoardColumn {
 
     @Column(nullable = false)
     private int position;
+
+    @Column(name = "wip_limit")
+    private Integer wipLimit;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "mapped_status", length = 20)
+    private TaskStatus mappedStatus;
 
     public Long getId() {
         return id;
@@ -58,5 +67,21 @@ public class BoardColumn {
 
     public void setPosition(int position) {
         this.position = position;
+    }
+
+    public Integer getWipLimit() {
+        return wipLimit;
+    }
+
+    public void setWipLimit(Integer wipLimit) {
+        this.wipLimit = wipLimit;
+    }
+
+    public TaskStatus getMappedStatus() {
+        return mappedStatus;
+    }
+
+    public void setMappedStatus(TaskStatus mappedStatus) {
+        this.mappedStatus = mappedStatus;
     }
 }

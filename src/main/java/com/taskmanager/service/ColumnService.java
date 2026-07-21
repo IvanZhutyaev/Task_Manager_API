@@ -60,6 +60,8 @@ public class ColumnService {
         column.setBoard(board);
         column.setName(request.name());
         column.setPosition(boardColumnRepository.findMaxPositionByBoard(board) + 1);
+        column.setWipLimit(request.wipLimit());
+        column.setMappedStatus(request.mappedStatus());
         column = boardColumnRepository.save(column);
 
         log.info("Column created: id={}, boardId={}", column.getId(), boardId);
@@ -72,6 +74,8 @@ public class ColumnService {
         projectAccessService.requireCanWriteContent(column.getBoard().getProject(), currentUserService.getCurrentUser());
 
         column.setName(request.name());
+        column.setWipLimit(request.wipLimit());
+        column.setMappedStatus(request.mappedStatus());
         column = boardColumnRepository.save(column);
         return ColumnResponse.from(column);
     }

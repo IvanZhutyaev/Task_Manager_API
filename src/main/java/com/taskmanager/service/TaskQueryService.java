@@ -1,11 +1,14 @@
 package com.taskmanager.service;
 
 import com.taskmanager.domain.BoardColumn;
+import com.taskmanager.domain.Label;
 import com.taskmanager.domain.Project;
 import com.taskmanager.domain.Task;
 import com.taskmanager.domain.TaskPriority;
 import com.taskmanager.domain.TaskStatus;
+import com.taskmanager.domain.TaskType;
 import com.taskmanager.domain.User;
+import com.taskmanager.repository.LabelRepository;
 import com.taskmanager.repository.TaskRepository;
 import com.taskmanager.security.CurrentUserService;
 import com.taskmanager.web.api.dto.PageResponse;
@@ -29,18 +32,24 @@ public class TaskQueryService {
     private final ProjectAccessService projectAccessService;
     private final CurrentUserService currentUserService;
     private final UserService userService;
+    private final ProjectService projectService;
+    private final LabelRepository labelRepository;
 
     public TaskQueryService(
             TaskRepository taskRepository,
             ColumnService columnService,
             ProjectAccessService projectAccessService,
             CurrentUserService currentUserService,
-            UserService userService) {
+            UserService userService,
+            ProjectService projectService,
+            LabelRepository labelRepository) {
         this.taskRepository = taskRepository;
         this.columnService = columnService;
         this.projectAccessService = projectAccessService;
         this.currentUserService = currentUserService;
         this.userService = userService;
+        this.projectService = projectService;
+        this.labelRepository = labelRepository;
     }
 
     @Transactional(readOnly = true)
@@ -49,28 +58,54 @@ public class TaskQueryService {
             Long assigneeId,
             TaskPriority priority,
             TaskStatus status,
+            TaskType taskType,
+            Long labelId,
             String q,
             int page,
             int size,
             String sortBy,
             String sortDir) {
         BoardColumn column = columnService.getColumnOrThrow(columnId);
-        projectAccessService.requireCanRead(column.getBoard().getProject(), currentUserService.getCurrentUser());
+        Project project = column.getBoard().getProject();
+        projectAccessService.requireCanRead(project, currentUserService.getCurrentUser());
 
-        User assignee = null;
-        if (assigneeId != null) {
-            assignee = userService.getUserById(assigneeId);
-        }
+        Page<Task> taskPage = taskRepository.findFilteredPageable(
+                column,
+                resolveAssignee(assigneeId),
+                priority,
+                status,
+                taskType,
+                resolveLabel(labelId, project),
+                StringUtils.hasText(q) ? q.trim() : null,
+                pageable(page, size, sortBy, sortDir));
+        return toPage(taskPage);
+    }
 
-        String query = StringUtils.hasText(q) ? q.trim() : null;
-        Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy == null ? "createdAt" : sortBy);
-        Pageable pageable = PageRequest.of(page, size, sort);
-        Page<Task> taskPage = taskRepository.findFilteredPageable(column, assignee, priority, status, query, pageable);
-        List<TaskResponse> content = taskPage.getContent().stream()
-                .filter(task -> !task.isDeleted())
-                .map(TaskResponse::from)
-                .toList();
-        return new PageResponse<>(content, taskPage.getNumber(), taskPage.getSize(), taskPage.getTotalElements(), taskPage.getTotalPages());
+    @Transactional(readOnly = true)
+    public PageResponse<TaskResponse> searchInProject(
+            Long projectId,
+            Long assigneeId,
+            TaskPriority priority,
+            TaskStatus status,
+            TaskType taskType,
+            Long labelId,
+            String q,
+            int page,
+            int size,
+            String sortBy,
+            String sortDir) {
+        Project project = projectService.getProjectOrThrow(projectId);
+        projectAccessService.requireCanRead(project, currentUserService.getCurrentUser());
+        Page<Task> taskPage = taskRepository.findInProject(
+                project,
+                resolveAssignee(assigneeId),
+                priority,
+                status,
+                taskType,
+                resolveLabel(labelId, project),
+                StringUtils.hasText(q) ? q.trim() : null,
+                pageable(page, size, sortBy, sortDir));
+        return toPage(taskPage);
     }
 
     @Transactional(readOnly = true)
@@ -80,14 +115,39 @@ public class TaskQueryService {
         return TaskResponse.from(task);
     }
 
-    @Transactional(readOnly = true)
     public Task getTaskOrThrow(Long taskId) {
-        return taskRepository.findById(taskId)
+        Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "Task not found"));
+        if (task.isDeleted()) {
+            throw new ApiException(HttpStatus.NOT_FOUND.value(), "Task not found");
+        }
+        return task;
     }
 
-    @Transactional(readOnly = true)
     public Project getProject(Task task) {
         return task.getColumn().getBoard().getProject();
+    }
+
+    private User resolveAssignee(Long assigneeId) {
+        return assigneeId == null ? null : userService.getUserById(assigneeId);
+    }
+
+    private Label resolveLabel(Long labelId, Project project) {
+        if (labelId == null) {
+            return null;
+        }
+        return labelRepository.findByIdAndProject(labelId, project)
+                .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST.value(), "Label not found"));
+    }
+
+    private Pageable pageable(int page, int size, String sortBy, String sortDir) {
+        Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy == null ? "createdAt" : sortBy);
+        return PageRequest.of(page, size, sort);
+    }
+
+    private PageResponse<TaskResponse> toPage(Page<Task> taskPage) {
+        List<TaskResponse> content = taskPage.getContent().stream().map(TaskResponse::from).toList();
+        return new PageResponse<>(content, taskPage.getNumber(), taskPage.getSize(),
+                taskPage.getTotalElements(), taskPage.getTotalPages());
     }
 }

@@ -51,7 +51,7 @@ class TaskControllerTest {
 
     @Test
     void createMoveAndFilterTasks() throws Exception {
-        TaskRequest taskRequest = new TaskRequest("Write docs", "README section", TaskPriority.HIGH, null, null, null);
+        TaskRequest taskRequest = new TaskRequest("Write docs", "README section", TaskPriority.HIGH, null, null, null, null, null, null, null, null);
 
         MvcResult createResult = mockMvc.perform(post("/api/v1/columns/" + columnOneId + "/tasks")
                         .header("Authorization", "Bearer " + token)
@@ -84,7 +84,7 @@ class TaskControllerTest {
 
     @Test
     void createTaskCanStartWithDoneStatus() throws Exception {
-        TaskRequest taskRequest = new TaskRequest("Ready task", "Done task", TaskPriority.LOW, null, null, TaskStatus.DONE);
+        TaskRequest taskRequest = new TaskRequest("Ready task", "Done task", TaskPriority.LOW, null, null, TaskStatus.DONE, null, null, null, null, null);
 
         mockMvc.perform(post("/api/v1/columns/" + columnOneId + "/tasks")
                         .header("Authorization", "Bearer " + token)
@@ -96,7 +96,7 @@ class TaskControllerTest {
 
     @Test
     void updateTaskStatusChangesStatus() throws Exception {
-        TaskRequest createRequest = new TaskRequest("Write docs", "README section", TaskPriority.HIGH, null, null, null);
+        TaskRequest createRequest = new TaskRequest("Write docs", "README section", TaskPriority.HIGH, null, null, null, null, null, null, null, null);
 
         MvcResult createResult = mockMvc.perform(post("/api/v1/columns/" + columnOneId + "/tasks")
                         .header("Authorization", "Bearer " + token)
@@ -107,7 +107,7 @@ class TaskControllerTest {
 
         Long taskId = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asLong();
 
-        TaskRequest updateRequest = new TaskRequest("Write docs", "README section", TaskPriority.HIGH, null, null, TaskStatus.IN_PROGRESS);
+        TaskRequest updateRequest = new TaskRequest("Write docs", "README section", TaskPriority.HIGH, null, null, TaskStatus.IN_PROGRESS, null, null, null, null, null);
 
         mockMvc.perform(put("/api/v1/tasks/" + taskId)
                         .header("Authorization", "Bearer " + token)

@@ -2,6 +2,8 @@ package com.taskmanager.web.api;
 
 import com.taskmanager.config.ApiConstants;
 import com.taskmanager.domain.TaskPriority;
+import com.taskmanager.domain.TaskStatus;
+import com.taskmanager.domain.TaskType;
 import com.taskmanager.service.TaskService;
 import com.taskmanager.web.api.dto.MoveTaskRequest;
 import com.taskmanager.web.api.dto.PageResponse;
@@ -9,7 +11,6 @@ import com.taskmanager.web.api.dto.TaskHistoryEntryResponse;
 import com.taskmanager.web.api.dto.TaskRequest;
 import com.taskmanager.web.api.dto.TaskResponse;
 import jakarta.validation.Valid;
-import com.taskmanager.domain.TaskStatus;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -41,12 +42,31 @@ public class TaskController {
             @RequestParam(required = false) Long assigneeId,
             @RequestParam(required = false) TaskPriority priority,
             @RequestParam(required = false) TaskStatus status,
+            @RequestParam(required = false) TaskType type,
+            @RequestParam(required = false) Long labelId,
             @RequestParam(required = false) String q,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
-        return taskService.listTasks(columnId, assigneeId, priority, status, q, page, size, sortBy, sortDir);
+        return taskService.listTasks(columnId, assigneeId, priority, status, type, labelId, q, page, size, sortBy, sortDir);
+    }
+
+    @GetMapping("/projects/{projectId}/tasks")
+    public PageResponse<TaskResponse> searchProjectTasks(
+            @PathVariable Long projectId,
+            @RequestParam(required = false) Long assigneeId,
+            @RequestParam(required = false) TaskPriority priority,
+            @RequestParam(required = false) TaskStatus status,
+            @RequestParam(required = false) TaskType type,
+            @RequestParam(required = false) Long labelId,
+            @RequestParam(required = false) String q,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+        return taskService.searchInProject(
+                projectId, assigneeId, priority, status, type, labelId, q, page, size, sortBy, sortDir);
     }
 
     @PostMapping("/columns/{columnId}/tasks")

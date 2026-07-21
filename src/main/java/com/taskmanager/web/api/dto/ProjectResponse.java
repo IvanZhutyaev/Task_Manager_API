@@ -9,7 +9,8 @@ public record ProjectResponse(
         String description,
         Long ownerId,
         String ownerName,
-        ProjectRole currentUserRole
+        ProjectRole currentUserRole,
+        boolean strictBusinessRules
 ) {
 
     public static ProjectResponse from(Project project, ProjectRole currentUserRole) {
@@ -19,7 +20,8 @@ public record ProjectResponse(
                 project.getDescription(),
                 project.getOwner().getId(),
                 project.getOwner().getName(),
-                currentUserRole
+                currentUserRole,
+                project.isStrictBusinessRules()
         );
     }
 }
